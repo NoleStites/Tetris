@@ -7,5 +7,34 @@
 body {
     width: 100vw;
     height: 100dvh;
+}
+
+#page {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#canvasBox {
+    width: 90%;
+    aspect-ratio: 10/18;
+    /* background-color: cadetblue; */
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    outline: 1px solid black;
+}
+
+.gameCanvas {
+    position: absolute;
+    /* width: 100%; */
+}
+#gameCanvasBack {
     background-color: black;
+}
+#gameCanvasFore {
+    /* background-color: rgba(0, 26, 255, 0.463); */
 }

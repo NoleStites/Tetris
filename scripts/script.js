@@ -1,5 +1,7 @@
 // TODO
-// - 
+// - Change the level after a while
+// - - Redraw the ctxBack to update the colors
+// - Update how shapes are rendered (they should no longer take up 100% of the cell space, but 90%)
 
 const canvasBox = document.getElementById("canvasBox");
 const gameCanvasBack = document.getElementById("gameCanvasBack");
@@ -11,6 +13,7 @@ var ctxFore = gameCanvasFore.getContext("2d");
 var gameSpeed = 750;
 var gameStarted = false;
 var gameIntervalID;
+var currentLevel = 1;
 
 // Board setup
 gameWidth = 10;
@@ -26,6 +29,10 @@ gameCanvasFore.style.aspectRatio = `${gameWidth}/${gameHeight}`;
 
 // Current shape variables
 var shapes = ['I', 'J', 'L', 'O', 'S', 'T', 'Z'];
+var levelColors = {
+    1: ['green', 'blue'],
+    2: ['purple', 'pink'],
+}
 var originX_default = 4;
 var originY_default = 4;
 // var originY_default = gameHeight - 1;
@@ -34,6 +41,8 @@ var originY = originY_default;
 var currentShape; // I, J, L, O, S, T, Z
 var currentOrientation = 0; // 0: default (up), 1: right, 2: down, 3: left
 var currentShapeCoordinates = [];
+var currentColorIndex;
+var currentTexture;
 
 // Game state
 // Usage: state[xCoord][yCoord]
@@ -47,10 +56,25 @@ for (let i = 0; i < gameWidth; i++) {
     state.push(col);
 }
 
-_drawGrid();
+// Placed texture state
+// Keeps track of the colors and textures of placed shapes
+// for when redrawing after a row collapse
+// Usage: state[xCoord][yCoord]
+// Each cell contains: [colorIndex, texture]
+// colorIndex: 0 for primary and 1 for secondary color of current level
+// texture (0) = filled with colorIndex
+// texture (1) = outlined with colorIndex
+var textureState = [];
+for (let i = 0; i < gameWidth; i++) {
+    let col = [];
+    for (let j = 0; j < gameHeight; j++) {
+        col.push([]);
+    }
+    state.push(col);
+}
+
+// _drawGrid();dd
 spawnNewShape();
-// drawShape('I', currentOrientation, 5, 9, true);
-// drawShape('Z', currentOrientation, originX, originY);
 startGameLoop();
 
 // Draws the grid lines of the game board
@@ -142,8 +166,14 @@ function drawShape(shape, orientation, x, y, place=false)
     _clearCurrentShapeFromState();
 
     ctx.lineWidth = 5;
-    ctx.strokeStyle = "rgb(255, 255, 255)";
-    ctx.fillStyle = "rgb(29, 134, 8)";
+    if (currentTexture == 0) { // Filled with color
+        ctx.strokeStyle = "rgb(255, 255, 255)";
+        // ctx.strokeStyle = levelColors[currentLevel][currentColorIndex];
+        ctx.fillStyle = levelColors[currentLevel][currentColorIndex];
+    } else { // Outlined with color
+        ctx.strokeStyle = levelColors[currentLevel][currentColorIndex];
+        ctx.fillStyle = "rgb(255, 255, 255)";
+    }
 
     switch(shape)
     {
@@ -384,7 +414,7 @@ function validateRotation(previewCoords)
     return true;
 }
 
-// Returns a random integer between two given values (inclusive)
+// Returns a random integer between two given values (exclusive)
 function randIntBetween(a, b) {
     return (Math.floor(Math.random() * b) + a);
 }
@@ -403,7 +433,9 @@ function spawnNewShape()
 {
     originX = 5;
     originY = 0;
-    let newShape = shapes[randIntBetween(0,shapes.length-1)];
+    currentColorIndex = randIntBetween(0,2);
+    currentTexture = randIntBetween(0,2);
+    let newShape = shapes[randIntBetween(0,shapes.length)];
     drawShape(newShape, currentOrientation, originX, originY);
 }
 

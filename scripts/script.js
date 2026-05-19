@@ -71,7 +71,6 @@ function _clearGrid(ctx)
 function _clearCurrentShapeFromState()
 {
     for (const [x, y] of currentShapeCoordinates) {
-        console.log(x, y);
         if (state[x][y] == 2) {
             state[x][y] = 0;
         }
@@ -216,88 +215,83 @@ function drawShape(shape, orientation, x, y, debug=false)
     logState();
 }
 
-// params
-// Action: 'left', 'right', 'cw', 'ccw' (clock- and counter-clock-wise)
-function updateCurrentShape(shape, orientation, x, y, action)
+function updateCurrentShape(shape, orientation, x, y)
 {
     _clearGrid(ctxFore);
-
-    switch(action)
-    {
-        case 'left':
-            drawShape(shape, orientation, x, y);
-            break;
-        case 'right':
-            drawShape(shape, orientation, x, y);
-            break;
-        case 'cw':
-            drawShape(shape, orientation, x, y);
-            break;
-        case 'ccw':
-            drawShape(shape, orientation, x, y);
-            break;
-    }
+    drawShape(shape, orientation, x, y);
 }
 
 
 // Enable keyboard movement inputs
 window.addEventListener("keydown", function(e) {
     switch (e.key) {
-        case 'w':
-        case 'W':
-        case 'ArrowUp':
-            handleRotationCW(currentShape, currentOrientation);
-            break;
         case 'a':
         case 'A':
         case 'ArrowLeft':
-            handleMovementLeft(currentShape, currentOrientation);
-            break;
-        case 's':
-        case 'S':
-        case 'ArrowDown':
-            handleRotationCCW(currentShape, currentOrientation);
+            handleMovementLeft();
             break;
         case 'd':
         case 'D':
         case 'ArrowRight':
-            handleMovementRight(currentShape, currentOrientation);
+            handleMovementRight();
+            break;
+        case 'j':
+        case 'J':
+            handleRotationCCW();
+            break;
+        case 'k':
+        case 'K':
+            handleRotationCW();
+            break;
+        case 's':
+        case 'S':
+        case 'ArrowDown':
+            handleSoftDrop();
             break;
     }
 });
 
-function handleMovementLeft(shape, orientation)
+function handleMovementLeft()
 {
     for (const [x, y] of currentShapeCoordinates) {
         if ((x == 0) || (state[x-1][y] == 1)) {return;}
     }
     originX -= 1;
-    updateCurrentShape(currentShape, currentOrientation, originX, originY, 'left');
+    updateCurrentShape(currentShape, currentOrientation, originX, originY);
 }
 
-function handleMovementRight(shape, orientation)
+function handleMovementRight()
 {
     for (const [x, y] of currentShapeCoordinates) {
         if ((x == gameWidth - 1) || (state[x+1][y] == 1)) {return;}
     }
     originX += 1;
-    updateCurrentShape(currentShape, currentOrientation, originX, originY, 'right');
+    updateCurrentShape(currentShape, currentOrientation, originX, originY);
 }
 
-function handleRotationCW(shape, orientation)
+function handleRotationCW()
 {
     if (!isValidRotationCW(currentShapeCoordinates, 0)) {return;}
     currentOrientation = (currentOrientation + 1) % 4;
-    updateCurrentShape(currentShape, currentOrientation, originX, originY, 'cw');
+    updateCurrentShape(currentShape, currentOrientation, originX, originY);
     return;
 }
 
-function handleRotationCCW(shape, orientation)
+function handleRotationCCW()
 {
     if (!isValidRotationCCW(currentShapeCoordinates, 0)) {return;}
     currentOrientation = (currentOrientation - 1 + 4) % 4;
-    updateCurrentShape(currentShape, currentOrientation, originX, originY, 'ccw');
+    updateCurrentShape(currentShape, currentOrientation, originX, originY);
     return;
+}
+
+function handleSoftDrop()
+{
+    for (const [x, y] of currentShapeCoordinates) {
+        if ((y+1 == gameHeight) || (state[x][y+1] == 1)) {return;}
+    }
+    originY += 1;
+    updateCurrentShape(currentShape, currentOrientation, originX, originY);
 }
 
 // Calls the helper functions necessary to determine if a rotation will be valid
@@ -306,12 +300,6 @@ function handleRotationCCW(shape, orientation)
 function isValidRotationCW(coordinates, originIndex)
 {
     let newCoords = previewRotationCW(coordinates, originIndex);
-    // if (validateRotation(newCoords)) {
-    //     currentShapeCoordinates = newCoords;
-    //     return true;
-    // } else {
-    //     return false;
-    // }
     return validateRotation(newCoords);
 }
 
@@ -321,12 +309,6 @@ function isValidRotationCW(coordinates, originIndex)
 function isValidRotationCCW(coordinates, originIndex)
 {
     let newCoords = previewRotationCCW(coordinates, originIndex);
-    // if (validateRotation(newCoords)) {
-    //     currentShapeCoordinates = newCoords;
-    //     return true;
-    // } else {
-    //     return false;
-    // }
     return validateRotation(newCoords);
 }
 

@@ -7,6 +7,12 @@ const gameCanvasFore = document.getElementById("gameCanvasFore");
 var ctxBack = gameCanvasBack.getContext("2d");
 var ctxFore = gameCanvasFore.getContext("2d");
 
+// Other
+var gameSpeed = 750;
+var gameStarted = false;
+var gameIntervalID;
+
+// Board setup
 gameWidth = 10;
 gameHeight = 18;
 var pixelSize = Math.floor(canvasBox.offsetWidth / gameWidth);
@@ -19,6 +25,7 @@ gameCanvasFore.height = pixelSize * gameHeight;
 gameCanvasFore.style.aspectRatio = `${gameWidth}/${gameHeight}`;
 
 // Current shape variables
+var shapes = ['I', 'J', 'L', 'O', 'S', 'T', 'Z'];
 var originX_default = 4;
 var originY_default = 4;
 // var originY_default = gameHeight - 1;
@@ -41,8 +48,10 @@ for (let i = 0; i < gameWidth; i++) {
 }
 
 _drawGrid();
-drawShape('I', currentOrientation, 5, 6, true);
-drawShape('Z', currentOrientation, originX, originY);
+spawnNewShape();
+// drawShape('I', currentOrientation, 5, 9, true);
+// drawShape('Z', currentOrientation, originX, originY);
+startGameLoop();
 
 // Draws the grid lines of the game board
 function _drawGrid()
@@ -73,6 +82,17 @@ function _clearCurrentShapeFromState()
     for (const [x, y] of currentShapeCoordinates) {
         if (state[x][y] == 2) {
             state[x][y] = 0;
+        }
+    }
+}
+
+// Loops through the state var and updates all occurances of the value '2' for current shape
+// to be '1', meaning it was placed
+function _placeCurrentShapeInState()
+{
+    for (const [x, y] of currentShapeCoordinates) {
+        if (state[x][y] == 2) {
+            state[x][y] = 1;
         }
     }
 }
@@ -113,10 +133,10 @@ function logState() {
 // Possible shapes include:
 // I, J, L, O, S, T, Z
 // debug: set to true if you want to place it as a non-current piece (1) for collision testing
-function drawShape(shape, orientation, x, y, debug=false)
+function drawShape(shape, orientation, x, y, place=false)
 {
-    let shapeValue = debug ? 1 : 2;
-    let ctx = debug ? ctxBack : ctxFore;
+    let shapeValue = place ? 1 : 2;
+    let ctx = place ? ctxBack : ctxFore;
 
     currentShape = shape;
     _clearCurrentShapeFromState();
@@ -285,13 +305,18 @@ function handleRotationCCW()
     return;
 }
 
+// Returns true is the shape was successfully lowered
+// Returns false if it would collide
 function handleSoftDrop()
 {
     for (const [x, y] of currentShapeCoordinates) {
-        if ((y+1 == gameHeight) || (state[x][y+1] == 1)) {return;}
+        if ((y+1 == gameHeight) || (state[x][y+1] == 1)) {
+            return false;
+        }
     }
     originY += 1;
     updateCurrentShape(currentShape, currentOrientation, originX, originY);
+    return true;
 }
 
 // Calls the helper functions necessary to determine if a rotation will be valid
@@ -357,4 +382,46 @@ function validateRotation(previewCoords)
     }
 
     return true;
+}
+
+// Returns a random integer between two given values (inclusive)
+function randIntBetween(a, b) {
+    return (Math.floor(Math.random() * b) + a);
+}
+
+// Solidifies the current shape's placement since it can no longer move
+function placeShape()
+{
+    // Update the state var
+    _placeCurrentShapeInState();
+
+    // Place the shape in the background
+    drawShape(currentShape, currentOrientation, originX, originY, place=true);
+}
+
+function spawnNewShape()
+{
+    originX = 5;
+    originY = 0;
+    let newShape = shapes[randIntBetween(0,shapes.length-1)];
+    drawShape(newShape, currentOrientation, originX, originY);
+}
+
+// The top-level to run every game tick responsible for all game actions
+function generateGameTick()
+{
+    if (!handleSoftDrop()) {
+        placeShape();
+        spawnNewShape();
+    }
+}
+
+// Begins the game logic (and loop timer)
+function startGameLoop()
+{
+    if (gameStarted) {return;}
+
+    // gameIntervalID = setInterval(generateGameTick, 500);
+    gameStarted = true;
+    gameIntervalID = setInterval(generateGameTick, gameSpeed);
 }

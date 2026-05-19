@@ -1,5 +1,5 @@
 // TODO
-// - Handle isValidRotationCW/CCW to assign newCoord to currentShapeCoords 
+// - 
 
 const canvasBox = document.getElementById("canvasBox");
 const gameCanvasBack = document.getElementById("gameCanvasBack");
@@ -42,7 +42,7 @@ for (let i = 0; i < gameWidth; i++) {
 
 _drawGrid();
 drawShape('I', currentOrientation, 5, 6, true);
-drawShape('T', currentOrientation, originX, originY);
+drawShape('Z', currentOrientation, originX, originY);
 
 // Draws the grid lines of the game board
 function _drawGrid()
@@ -71,6 +71,7 @@ function _clearGrid(ctx)
 function _clearCurrentShapeFromState()
 {
     for (const [x, y] of currentShapeCoordinates) {
+        console.log(x, y);
         if (state[x][y] == 2) {
             state[x][y] = 0;
         }
@@ -139,9 +140,70 @@ function drawShape(shape, orientation, x, y, debug=false)
                 currentShapeCoordinates = [[x,y], [x,y-1], [x,y+1], [x,y+2]];
             }
             break;
+        case 'J':
+            if (orientation == 0) {
+                currentShapeCoordinates = [[x,y], [x,y-1], [x,y+1], [x-1,y+1]];
+            } else if (orientation == 1) {
+                currentShapeCoordinates = [[x,y], [x-1,y], [x+1,y], [x-1,y-1]];
+            } else if (orientation == 2) {
+                currentShapeCoordinates = [[x,y], [x,y-1], [x,y+1], [x+1,y-1]];
+            } else if (orientation == 3) {
+                currentShapeCoordinates = [[x,y], [x-1,y], [x+1,y], [x+1,y+1]];
+            }
+            break;
+        case 'L':
+            if (orientation == 0) {
+                currentShapeCoordinates = [[x,y], [x,y-1], [x,y+1], [x+1,y+1]];
+            } else if (orientation == 1) {
+                currentShapeCoordinates = [[x,y], [x-1,y], [x+1,y], [x-1,y+1]];
+            } else if (orientation == 2) {
+                currentShapeCoordinates = [[x,y], [x,y-1], [x,y+1], [x-1,y-1]];
+            } else if (orientation == 3) {
+                currentShapeCoordinates = [[x,y], [x-1,y], [x+1,y], [x+1,y-1]];
+            }
+            break;
+        case 'O':
+            if (orientation == 0) {
+                currentShapeCoordinates = [[x,y], [x-1,y], [x-1,y+1], [x,y+1]];
+            } else if (orientation == 1) {
+                currentShapeCoordinates = [[x,y], [x-1,y], [x-1,y-1], [x,y-1]];
+            } else if (orientation == 2) {
+                currentShapeCoordinates = [[x,y], [x+1,y], [x+1,y-1], [x,y-1]];
+            } else if (orientation == 3) {
+                currentShapeCoordinates = [[x,y], [x+1,y], [x+1,y+1], [x,y+1]];
+            }
+            break;
+        case 'S':
+            if (orientation == 0) {
+                currentShapeCoordinates = [[x,y], [x+1,y], [x,y+1], [x-1,y+1]];
+            } else if (orientation == 1) {
+                currentShapeCoordinates = [[x,y], [x,y+1], [x-1,y], [x-1,y-1]];
+            } else if (orientation == 2) {
+                currentShapeCoordinates = [[x,y], [x,y-1], [x-1,y], [x+1,y-1]];
+            } else if (orientation == 3) {
+                currentShapeCoordinates = [[x,y], [x,y-1], [x+1,y], [x+1,y+1]];
+            }
+            break;
         case 'T':
             if (orientation == 0) {
                 currentShapeCoordinates = [[x,y], [x-1,y], [x+1,y], [x,y+1]];
+            } else if (orientation == 1) {
+                currentShapeCoordinates = [[x,y], [x-1,y], [x,y-1], [x,y+1]];
+            } else if (orientation == 2) {
+                currentShapeCoordinates = [[x,y], [x-1,y], [x+1,y], [x,y-1]];
+            } else if (orientation == 3) {
+                currentShapeCoordinates = [[x,y], [x+1,y], [x,y-1], [x,y+1]];
+            }
+            break;
+        case 'Z':
+            if (orientation == 0) {
+                currentShapeCoordinates = [[x,y], [x-1,y], [x,y+1], [x+1,y+1]];
+            } else if (orientation == 1) {
+                currentShapeCoordinates = [[x,y], [x-1,y], [x,y-1], [x-1,y+1]];
+            } else if (orientation == 2) {
+                currentShapeCoordinates = [[x,y], [x+1,y], [x,y-1], [x-1,y-1]];
+            } else if (orientation == 3) {
+                currentShapeCoordinates = [[x,y], [x+1,y], [x,y+1], [x+1,y-1]];
             }
             break;
     }
@@ -151,7 +213,7 @@ function drawShape(shape, orientation, x, y, debug=false)
         ctx.strokeRect(x*pixelSize, y*pixelSize, pixelSize, pixelSize);
         state[x][y] = shapeValue; // Mark corresponding pos. in state as a shape
     }
-    // logState();
+    logState();
 }
 
 // params
@@ -244,7 +306,7 @@ function handleRotationCCW(shape, orientation)
 function isValidRotationCW(coordinates, originIndex)
 {
     let newCoords = previewRotationCW(coordinates, originIndex);
-    // if (validateRotation) {
+    // if (validateRotation(newCoords)) {
     //     currentShapeCoordinates = newCoords;
     //     return true;
     // } else {
@@ -259,7 +321,7 @@ function isValidRotationCW(coordinates, originIndex)
 function isValidRotationCCW(coordinates, originIndex)
 {
     let newCoords = previewRotationCCW(coordinates, originIndex);
-    // if (validateRotation) {
+    // if (validateRotation(newCoords)) {
     //     currentShapeCoordinates = newCoords;
     //     return true;
     // } else {
@@ -311,7 +373,6 @@ function validateRotation(previewCoords)
         // Check that coords would not collide with other pieces
         if (state[x][y] == 1) {return false;}
     }
-
 
     return true;
 }

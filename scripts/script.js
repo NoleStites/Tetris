@@ -1,7 +1,6 @@
 // TODO
 // - Change the level after a while
 // - - Redraw the ctxBack to update the colors
-// - Update how shapes are rendered (they should no longer take up 100% of the cell space, but 90%)
 
 const canvasBox = document.getElementById("canvasBox");
 const gameCanvasBack = document.getElementById("gameCanvasBack");
@@ -43,6 +42,8 @@ var currentOrientation = 0; // 0: default (up), 1: right, 2: down, 3: left
 var currentShapeCoordinates = [];
 var currentColorIndex;
 var currentTexture;
+var scale = 0.85;
+var offset = (pixelSize-pixelSize*scale)/2;
 
 // Game state
 // Usage: state[xCoord][yCoord]
@@ -73,7 +74,7 @@ for (let i = 0; i < gameWidth; i++) {
     state.push(col);
 }
 
-// _drawGrid();dd
+// _drawGrid();
 spawnNewShape();
 startGameLoop();
 
@@ -167,8 +168,8 @@ function drawShape(shape, orientation, x, y, place=false)
 
     ctx.lineWidth = 5;
     if (currentTexture == 0) { // Filled with color
-        ctx.strokeStyle = "rgb(255, 255, 255)";
-        // ctx.strokeStyle = levelColors[currentLevel][currentColorIndex];
+        // ctx.strokeStyle = "rgb(255, 255, 255)";
+        ctx.strokeStyle = levelColors[currentLevel][currentColorIndex];
         ctx.fillStyle = levelColors[currentLevel][currentColorIndex];
     } else { // Outlined with color
         ctx.strokeStyle = levelColors[currentLevel][currentColorIndex];
@@ -258,8 +259,8 @@ function drawShape(shape, orientation, x, y, place=false)
     }
 
     for (const [x, y] of currentShapeCoordinates) {
-        ctx.fillRect(x*pixelSize, y*pixelSize, pixelSize, pixelSize);
-        ctx.strokeRect(x*pixelSize, y*pixelSize, pixelSize, pixelSize);
+        ctx.fillRect(x*pixelSize + offset, y*pixelSize + offset, pixelSize*scale, pixelSize*scale);
+        ctx.strokeRect(x*pixelSize + offset, y*pixelSize + offset, pixelSize*scale, pixelSize*scale);
         state[x][y] = shapeValue; // Mark corresponding pos. in state as a shape
     }
     logState();

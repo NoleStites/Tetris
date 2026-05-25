@@ -202,24 +202,24 @@ function drawShape(shape, orientation, x, y, place=false)
             }
             break;
         case 'J':
-            if (orientation == 0) {
+            if (orientation == 3) {
                 currentShapeCoordinates = [[x,y], [x,y-1], [x,y+1], [x-1,y+1]];
-            } else if (orientation == 1) {
+            } else if (orientation == 0) {
                 currentShapeCoordinates = [[x,y], [x-1,y], [x+1,y], [x-1,y-1]];
-            } else if (orientation == 2) {
+            } else if (orientation == 1) {
                 currentShapeCoordinates = [[x,y], [x,y-1], [x,y+1], [x+1,y-1]];
-            } else if (orientation == 3) {
+            } else if (orientation == 2) {
                 currentShapeCoordinates = [[x,y], [x-1,y], [x+1,y], [x+1,y+1]];
             }
             break;
         case 'L':
-            if (orientation == 0) {
+            if (orientation == 1) {
                 currentShapeCoordinates = [[x,y], [x,y-1], [x,y+1], [x+1,y+1]];
-            } else if (orientation == 1) {
-                currentShapeCoordinates = [[x,y], [x-1,y], [x+1,y], [x-1,y+1]];
             } else if (orientation == 2) {
-                currentShapeCoordinates = [[x,y], [x,y-1], [x,y+1], [x-1,y-1]];
+                currentShapeCoordinates = [[x,y], [x-1,y], [x+1,y], [x-1,y+1]];
             } else if (orientation == 3) {
+                currentShapeCoordinates = [[x,y], [x,y-1], [x,y+1], [x-1,y-1]];
+            } else if (orientation == 0) {
                 currentShapeCoordinates = [[x,y], [x-1,y], [x+1,y], [x+1,y-1]];
             }
             break;
@@ -274,19 +274,17 @@ function drawShape(shape, orientation, x, y, place=false)
         ctx.strokeRect(x*pixelSize + offset, y*pixelSize + offset, pixelSize*scale, pixelSize*scale);
         state[x][y] = shapeValue; // Mark corresponding pos. in state as a shape
     }
-    logState();
+    // logState();
 }
 
 // Redraws the ctxBack to reflect the updated state var
 function drawBackground()
 {
-    console.log("drawBackground");
     ctxBack.clearRect(0, 0, gameWidth*pixelSize, gameHeight*pixelSize);
     for (let x = 0; x < gameWidth; x++) {
         for (let y = 0; y < gameHeight; y++) {   
             let cellTexture = textureState[x][y];
             if (state[x][y] != 1) {continue;}
-            console.log("drawing...");
             if (cellTexture[1] == 0) { // Filled with color
                 ctxBack.strokeStyle = levelColors[currentLevel][cellTexture[0]];
                 ctxBack.fillStyle = levelColors[currentLevel][cellTexture[0]];
@@ -469,6 +467,7 @@ function spawnNewShape()
 {
     originX = 5;
     originY = -2;
+    currentOrientation = 0;
     currentColorIndex = randIntBetween(0,2);
     currentTexture = randIntBetween(0,2);
     let newShape = shapes[randIntBetween(0,shapes.length)];
@@ -566,7 +565,6 @@ function checkForLoss()
 {
     for (const [x, y] of currentShapeCoordinates) {
         if (y < 0) {
-            console.log("negative");
             return 1;
         }
     }
@@ -578,7 +576,6 @@ function endGame()
 {
     // Stop game loop
     clearInterval(gameIntervalID);
-    console.log("GAME OVER");
 }
 
 // The top-level to run every game tick responsible for all game actions
@@ -590,6 +587,7 @@ function generateGameTick()
 
         // Check for loss
         if (checkForLoss() == 1) {
+            console.log("GAME OVER");
             endGame();
         };
 

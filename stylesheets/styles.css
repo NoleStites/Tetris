@@ -1,3 +1,7 @@
+:root {
+    --boardBackgroundColor: black;
+}
+
 * {
     margin: 0;
     padding: 0;
@@ -33,7 +37,7 @@ body {
     /* width: 100%; */
 }
 #gameCanvasBack {
-    background-color: black;
+    background-color: var(--boardBackgroundColor);
 }
 #gameCanvasFore {
     /* background-color: rgba(0, 26, 255, 0.463); */

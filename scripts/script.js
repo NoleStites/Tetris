@@ -1,6 +1,7 @@
 // TODO
 // - Change the level after a while
 // - - Redraw the ctxBack to update the colors
+// - Handle row completion logic (delete row and cascade downwards)
 
 const canvasBox = document.getElementById("canvasBox");
 const gameCanvasBack = document.getElementById("gameCanvasBack");
@@ -8,11 +9,18 @@ const gameCanvasFore = document.getElementById("gameCanvasFore");
 var ctxBack = gameCanvasBack.getContext("2d");
 var ctxFore = gameCanvasFore.getContext("2d");
 
+// Access CSS vars
+const root = document.documentElement;
+const styles = getComputedStyle(root);
+const boardBackgroundColor = styles.getPropertyValue("--boardBackgroundColor");
+
 // Other
 var gameSpeed = 750;
+var collapseSpeed = 100;
 var gameStarted = false;
 var gameIntervalID;
 var currentLevel = 1;
+var isCollapsing = false;
 
 // Board setup
 gameWidth = 10;
@@ -71,7 +79,7 @@ for (let i = 0; i < gameWidth; i++) {
     for (let j = 0; j < gameHeight; j++) {
         col.push([]);
     }
-    state.push(col);
+    textureState.push(col);
 }
 
 // _drawGrid();
@@ -113,11 +121,13 @@ function _clearCurrentShapeFromState()
 
 // Loops through the state var and updates all occurances of the value '2' for current shape
 // to be '1', meaning it was placed
-function _placeCurrentShapeInState()
+// Also updates the texture map to account for all segments of the piece and their color/texture
+function _placeCurrentShapeInStateAndTexture()
 {
     for (const [x, y] of currentShapeCoordinates) {
         if (state[x][y] == 2) {
             state[x][y] = 1;
+            textureState[x][y] = [currentColorIndex, currentTexture];
         }
     }
 }
@@ -157,6 +167,7 @@ function logState() {
 // Draws the specified shape on the grid
 // Possible shapes include:
 // I, J, L, O, S, T, Z
+// orientation: 0, 1, 2, 3
 // debug: set to true if you want to place it as a non-current piece (1) for collision testing
 function drawShape(shape, orientation, x, y, place=false)
 {
@@ -264,6 +275,30 @@ function drawShape(shape, orientation, x, y, place=false)
         state[x][y] = shapeValue; // Mark corresponding pos. in state as a shape
     }
     logState();
+}
+
+// Redraws the ctxBack to reflect the updated state var
+function drawBackground()
+{
+    console.log("drawBackground");
+    ctxBack.clearRect(0, 0, gameWidth*pixelSize, gameHeight*pixelSize);
+    for (let x = 0; x < gameWidth; x++) {
+        for (let y = 0; y < gameHeight; y++) {   
+            let cellTexture = textureState[x][y];
+            if (state[x][y] != 1) {continue;}
+            console.log("drawing...");
+            if (cellTexture[1] == 0) { // Filled with color
+                ctxBack.strokeStyle = levelColors[currentLevel][cellTexture[0]];
+                ctxBack.fillStyle = levelColors[currentLevel][cellTexture[0]];
+            } else { // Outlined with color
+                ctxBack.strokeStyle = levelColors[currentLevel][cellTexture[0]];
+                ctxBack.fillStyle = "rgb(255, 255, 255)";
+            }
+
+            ctxBack.fillRect(x*pixelSize + offset, y*pixelSize + offset, pixelSize*scale, pixelSize*scale);
+            ctxBack.strokeRect(x*pixelSize + offset, y*pixelSize + offset, pixelSize*scale, pixelSize*scale);
+        }
+    }
 }
 
 function updateCurrentShape(shape, orientation, x, y)
@@ -424,7 +459,7 @@ function randIntBetween(a, b) {
 function placeShape()
 {
     // Update the state var
-    _placeCurrentShapeInState();
+    _placeCurrentShapeInStateAndTexture();
 
     // Place the shape in the background
     drawShape(currentShape, currentOrientation, originX, originY, place=true);
@@ -433,18 +468,134 @@ function placeShape()
 function spawnNewShape()
 {
     originX = 5;
-    originY = 0;
+    originY = -2;
     currentColorIndex = randIntBetween(0,2);
     currentTexture = randIntBetween(0,2);
     let newShape = shapes[randIntBetween(0,shapes.length)];
     drawShape(newShape, currentOrientation, originX, originY);
 }
 
+// Returns a list of indexes for the rows to collapse this tick
+function _getRowsToCollapse()
+{
+    let rowsToCollapse = []; // Contains row index numbers for rows to collapse
+
+    // Loop through Y first (rows), then X (columns) to flip the axes
+    for (let y = 0; y < gameHeight; y++) {
+        let collapse = true;
+        for (let x = 0; x < gameWidth; x++) {
+            if ((state[x][y] == 0) || (state[x][y] == 2)) {
+                collapse = false;
+                break;
+            }
+        }
+
+        if (collapse) {rowsToCollapse.push(y);}
+    }
+    return rowsToCollapse;
+}
+
+// Shifts all placed cells on the board down (after row(s) collapse)
+function shiftBlocksDown(rows)
+{
+    for (let x = 0; x < gameWidth; x++) {
+        rows.forEach(row => {
+            for (let y = row-1; y >= 0; y--) {
+                state[x][y+1] = state[x][y];
+                textureState[x][y+1] = textureState[x][y];
+            }
+        });
+    }
+    // Rerender the background
+    drawBackground();
+}
+
+// Runs animation for row collapse and updates all state vars accordingly
+function collapseRows(rows)
+{
+    let collapseIndexOffset = 0; // Collapse offset starting from center of row
+
+    let collapseIntervalID = setInterval(() => {
+        let currX_left = gameWidth/2 - collapseIndexOffset - 1;
+        let currX_right = gameWidth/2 + collapseIndexOffset;
+
+        for (let i = 0; i < rows.length; i++){
+            ctxBack.clearRect(currX_left*pixelSize, rows[i]*pixelSize, pixelSize, pixelSize);
+            ctxBack.clearRect(currX_right*pixelSize, rows[i]*pixelSize, pixelSize, pixelSize);
+        }
+
+        // Increment this once per frame
+        collapseIndexOffset++;
+
+        if (collapseIndexOffset >= gameWidth/2) {
+            // Animation finished
+            clearInterval(collapseIntervalID);
+            isCollapsing = false;
+            shiftBlocksDown(rows);
+        }
+    }, collapseSpeed);
+    
+    return;
+}
+
+// Top-level function that scans the state of the board for any complete rows that can be deleted
+// Handles the logic for deleting the row(s) and cascading downwards
+function handleRowCollapse()
+{
+    let rows = _getRowsToCollapse();
+    if (rows.length == 0) {
+        // startGameLoop();
+        return;
+    }
+
+    // Clear row(s) in state 
+    for (let y = 0; y < rows.length; y++) {
+        for (let x = 0; x < gameWidth; x++) {
+            state[x][rows[y]] = 0;
+            textureState[x][rows[y]] = [];
+        }
+    }
+    isCollapsing = true;
+    collapseRows(rows);
+}
+
+// Check to see if the player lost
+// Condition: a placed piece flows out the top of the grid
+// Returns 0 if no loss and 1 for loss
+function checkForLoss()
+{
+    for (const [x, y] of currentShapeCoordinates) {
+        if (y < 0) {
+            console.log("negative");
+            return 1;
+        }
+    }
+    return 0;
+}
+
+// The logic for game over
+function endGame()
+{
+    // Stop game loop
+    clearInterval(gameIntervalID);
+    console.log("GAME OVER");
+}
+
 // The top-level to run every game tick responsible for all game actions
 function generateGameTick()
 {
+    // Check if shape can be placed
     if (!handleSoftDrop()) {
         placeShape();
+
+        // Check for loss
+        if (checkForLoss() == 1) {
+            endGame();
+        };
+
+        // Check for row collapses
+        handleRowCollapse();
+
         spawnNewShape();
     }
 }
@@ -452,7 +603,7 @@ function generateGameTick()
 // Begins the game logic (and loop timer)
 function startGameLoop()
 {
-    if (gameStarted) {return;}
+    if (gameStarted || isCollapsing) {return;}
 
     // gameIntervalID = setInterval(generateGameTick, 500);
     gameStarted = true;
